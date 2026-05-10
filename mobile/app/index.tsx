@@ -9,7 +9,7 @@ import {
   View,
 } from 'react-native';
 
-import { Redirect, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 
 import { API_BASE_URL } from '../src/constants/api';
 import { useAuthContext } from '../src/context/AuthContext';
@@ -71,6 +71,13 @@ export default function HomeScreen(): React.JSX.Element {
     [token, logout],
   );
 
+  // Navigate outside of render — Redirect during render blocks the Stack init.
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      router.replace('/login');
+    }
+  }, [isLoading, isAuthenticated, router]);
+
   useEffect(() => {
     if (isAuthenticated && token) {
       void fetchFeed();
@@ -86,7 +93,11 @@ export default function HomeScreen(): React.JSX.Element {
   }
 
   if (!isAuthenticated) {
-    return <Redirect href="/login" />;
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator size="large" color="#fff" />
+      </View>
+    );
   }
 
   if (isFetching && videos.length === 0) {
