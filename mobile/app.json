@@ -8,8 +8,7 @@
     "newArchEnabled": false,
     "platforms": ["ios", "android"],
     "plugins": [
-      "expo-router",
-      "expo-secure-store"
+      "expo-router"
     ],
     "ios": {
       "supportsTablet": false,
