@@ -128,6 +128,9 @@ export function useAuth(): AuthState {
           scheduleRenewal(stored);
         }
       })
+      .catch(() => {
+        // Any error during restore leaves the user on the login screen.
+      })
       .finally(() => setIsLoading(false));
     return clearTimer;
   }, [scheduleRenewal]);

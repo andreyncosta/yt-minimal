@@ -7,13 +7,19 @@
     "orientation": "portrait",
     "newArchEnabled": false,
     "platforms": ["ios", "android"],
+    "plugins": [
+      "expo-router",
+      "expo-secure-store"
+    ],
     "ios": {
-      "supportsTablet": false
+      "supportsTablet": false,
+      "bundleIdentifier": "com.araujocostamkt.ytminimal"
     },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#000000"
-      }
+      },
+      "package": "com.araujocostamkt.ytminimal"
     }
   }
 }
