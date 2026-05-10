@@ -1,0 +1,19 @@
+{
+  "expo": {
+    "name": "YT Minimal",
+    "slug": "yt-minimal",
+    "scheme": "ytminimal",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "newArchEnabled": false,
+    "platforms": ["ios", "android"],
+    "ios": {
+      "supportsTablet": false
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#000000"
+      }
+    }
+  }
+}
