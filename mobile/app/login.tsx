@@ -12,11 +12,15 @@ import { useAuthContext } from '../src/context/AuthContext';
 export default function Login(): React.JSX.Element {
   const { login, isLoading } = useAuthContext();
   const [isBusy, setIsBusy] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
 
   const handleLogin = async (): Promise<void> => {
     setIsBusy(true);
+    setLoginError(null);
     try {
       await login();
+    } catch (e) {
+      setLoginError(e instanceof Error ? e.message : 'Erro inesperado ao fazer login');
     } finally {
       setIsBusy(false);
     }
@@ -34,6 +38,10 @@ export default function Login(): React.JSX.Element {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>YT Minimal</Text>
+
+      {loginError != null && (
+        <Text style={styles.errorText}>{loginError}</Text>
+      )}
 
       <Pressable
         style={({ pressed }) => [
@@ -68,6 +76,12 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#fff',
     letterSpacing: 0.5,
+  },
+  errorText: {
+    color: '#f66',
+    fontSize: 14,
+    textAlign: 'center',
+    maxWidth: 280,
   },
   button: {
     minWidth: 220,

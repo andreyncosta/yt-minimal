@@ -140,9 +140,23 @@ export function useAuth(): AuthState {
       `${API_BASE_URL}/auth/login`,
       APP_SCHEME,
     );
+    // User dismissed the browser — not an error, just stay on login screen.
     if (result.type !== 'success') return;
+
+    // Backend redirects here on failure: ytminimal://auth?error=<code>
+    const errorMatch = result.url.match(/[?&]error=([^&]+)/);
+    if (errorMatch) {
+      const code = decodeURIComponent(errorMatch[1]);
+      const messages: Record<string, string> = {
+        oauth_denied: 'Acesso negado pelo Google',
+        exchange_failed: 'Erro ao trocar o código OAuth com o servidor',
+        internal: 'Erro interno no servidor',
+      };
+      throw new Error(messages[code] ?? `Falha no login (${code})`);
+    }
+
     const jwt = extractToken(result.url);
-    if (!jwt) return;
+    if (!jwt) throw new Error('Token ausente na resposta do servidor');
     await persist(jwt);
   }, [persist]);
 
