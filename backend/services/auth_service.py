@@ -11,7 +11,7 @@ import token_store
 
 _GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
 _GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
-_YOUTUBE_SCOPE = "https://www.googleapis.com/auth/youtube.readonly"
+_YOUTUBE_SCOPE = "openid https://www.googleapis.com/auth/youtube.readonly"
 _JWT_ALGORITHM = "HS256"
 _JWT_EXPIRY_HOURS = 1
 _JWT_REFRESH_GRACE_HOURS = 24  # allow refresh up to 24h after token expiry
