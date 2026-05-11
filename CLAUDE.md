@@ -72,6 +72,9 @@ EXPO_PUBLIC_API_BASE_URL=https://yt-minimal.onrender.com
 - `requirements.txt`: yt-dlp despinado (estava fixo em versão ~16 meses antiga)
 - `routers/auth.py`: rate limiting adicionado em /auth/login (30/min) e /auth/callback (10/min)
 - `services/auth_service.py`: grace period de 24h para refresh de JWT (evita logout abrupto)
+- `services/auth_service.py`: adicionado `openid` ao scope OAuth — sem ele Google não retorna
+  `id_token`, causando KeyError silencioso em `exchange_code()` → todo login falhava com
+  `error=internal` mesmo sem nenhuma mensagem de erro visível
 - `services/feed_service.py`: substituído `playlist_ids[:15]` (truncava silenciosamente) por
   asyncio.Semaphore(15) — busca todos os canais com concorrência limitada
 - `services/audio_service.py`: timeout de 15s no yt-dlp via asyncio.wait_for
@@ -95,9 +98,20 @@ EXPO_PUBLIC_API_BASE_URL=https://yt-minimal.onrender.com
 ## Pendências
 1. Registrar `https://yt-minimal.onrender.com/auth/callback` no Google Cloud Console
    (Authorized redirect URIs) para o OAuth funcionar em produção
-2. Confirmar que todos os env vars acima estão configurados no painel do Render
-3. Verificar se o crash "Something went wrong" no Expo Go foi resolvido após o último fix
-   (commit fa0bed1 — remoção do SplashScreen). Rodar: `npx expo start --clear`
+2. Confirmar que todos os env vars abaixo estão configurados no painel do Render:
+   YOUTUBE_API_KEY, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI,
+   JWT_SECRET_KEY, FERNET_KEY, ALLOWED_ORIGINS
+3. ALLOWED_ORIGINS deve incluir o scheme do app: `ytminimal://` e se testar via Expo Go,
+   também o endereço `exp://...` mostrado pelo `expo start`
+4. Verificar se o crash "Something went wrong" no Expo Go foi resolvido após o commit fa0bed1
+   (remoção do SplashScreen). Rodar: `npx expo start --clear`
+5. Testar fluxo completo após 1–4: login → feed → player → áudio
+
+## Limitação conhecida (token_store.py)
+O `token_store.py` usa dict em memória. No Render free tier, o servidor hiberna após
+~15 min de inatividade e reinicia — todos os refresh tokens são perdidos. Usuários
+precisam fazer login novamente após cada restart. Aceitável para MVP; futuramente
+substituir por Redis ou banco de dados.
 
 ## Convenções
 - Backend: snake_case, type hints obrigatórios, Pydantic com extra="forbid"
