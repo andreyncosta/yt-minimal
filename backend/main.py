@@ -8,7 +8,7 @@ from slowapi.errors import RateLimitExceeded
 
 from limiter import limiter
 from middleware.security import SecurityHeadersMiddleware
-from routers import audio, auth, feed
+from routers import auth, feed
 
 load_dotenv()
 
@@ -33,7 +33,6 @@ app.add_middleware(SecurityHeadersMiddleware)
 
 app.include_router(auth.router)
 app.include_router(feed.router)
-app.include_router(audio.router)
 
 
 @app.get("/health")

@@ -21,7 +21,7 @@ async def _playlist_video_ids(
     client: httpx.AsyncClient,
     headers: dict,
     playlist_id: str,
-    max_items: int = 3,
+    max_items: int = 2,
 ) -> list[str]:
     resp = await client.get(
         f"{_YT}/playlistItems",
@@ -62,7 +62,7 @@ async def get_feed(
             params={
                 "part": "snippet",
                 "mine": "true",
-                "maxResults": "25",
+                "maxResults": "10",
                 "order": "relevance",
                 **({"pageToken": page_token} if page_token else {}),
             },

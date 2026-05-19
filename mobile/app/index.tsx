@@ -151,7 +151,6 @@ export default function HomeScreen(): React.JSX.Element {
                   videoId: item.video_id,
                   title: item.title,
                   channel: item.channel,
-                  videoUri: '',
                 },
               })
             }

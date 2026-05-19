@@ -75,7 +75,9 @@ async def callback(
 
 
 @router.post("/refresh", response_model=SessionResponse)
+@limiter.limit("30/minute")
 async def refresh(
+    request: Request,
     authorization: Annotated[str, Header()],
 ) -> SessionResponse:
     if not authorization.startswith("Bearer "):

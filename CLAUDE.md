@@ -77,7 +77,8 @@ EXPO_PUBLIC_API_BASE_URL=https://yt-minimal.onrender.com
   `error=internal` mesmo sem nenhuma mensagem de erro visível
 - `services/feed_service.py`: substituído `playlist_ids[:15]` (truncava silenciosamente) por
   asyncio.Semaphore(15) — busca todos os canais com concorrência limitada
-- `services/audio_service.py`: timeout de 15s no yt-dlp via asyncio.wait_for
+- `token_store.py`: migrado de dict em memória para SQLite via `sqlite3` built-in
+- `routers/auth.py`: adicionado rate limit de 30/min em `/auth/refresh` (gap de segurança)
 
 ### Mobile
 - `app.json`: adicionado plugin `expo-router` (ausência causava tela branca)
@@ -92,8 +93,9 @@ EXPO_PUBLIC_API_BASE_URL=https://yt-minimal.onrender.com
 - `src/hooks/useAuth.ts`: verifica expiração do JWT salvo antes de marcar como autenticado;
   faz refresh silencioso se expirado
 - `src/components/VideoPlayer.tsx`: adicionado prop `onError`
-- `src/components/AudioPlayer.tsx`: adicionado estado de erro com UI de fallback
 - `tsconfig.json`: adicionado `"moduleResolution": "bundler"` (corrige aviso de depreciação do TS)
+- `src/components/AudioPlayer.tsx`, `ModeToggle.tsx`, `VideoPlayer.tsx`: removidos — modo áudio eliminado; player simplificado para "Ver no YouTube" via expo-web-browser
+- `routers/audio.py`, `services/audio_service.py`: removidos — yt-dlp e modo áudio eliminados do backend
 
 ## Pendências
 1. Registrar `https://yt-minimal.onrender.com/auth/callback` no Google Cloud Console
@@ -105,13 +107,14 @@ EXPO_PUBLIC_API_BASE_URL=https://yt-minimal.onrender.com
    também o endereço `exp://...` mostrado pelo `expo start`
 4. Verificar se o crash "Something went wrong" no Expo Go foi resolvido após o commit fa0bed1
    (remoção do SplashScreen). Rodar: `npx expo start --clear`
-5. Testar fluxo completo após 1–4: login → feed → player → áudio
+5. Testar fluxo completo após 1–4: login → feed → player
 
 ## Limitação conhecida (token_store.py)
-O `token_store.py` usa dict em memória. No Render free tier, o servidor hiberna após
-~15 min de inatividade e reinicia — todos os refresh tokens são perdidos. Usuários
-precisam fazer login novamente após cada restart. Aceitável para MVP; futuramente
-substituir por Redis ou banco de dados.
+O `token_store.py` usa SQLite (`tokens.db`). No Render free tier, o filesystem é
+efêmero — o arquivo é perdido em cada restart/hibernate (~15 min de inatividade),
+e os usuários precisam fazer login novamente. Aceitável para MVP; futuramente
+substituir por Redis ou banco de dados persistente (configurar `TOKEN_DB_PATH`
+para um volume montado, quando disponível).
 
 ## Convenções
 - Backend: snake_case, type hints obrigatórios, Pydantic com extra="forbid"
