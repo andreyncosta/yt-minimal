@@ -71,6 +71,7 @@ Requires a `.env` in `mobile/` pointing to your local or deployed backend URL.
 | `GET` | `/auth/login` | Initiate OAuth flow |
 | `GET` | `/auth/callback` | OAuth callback handler |
 | `GET` | `/feed/` | Filtered subscription feed |
+| `POST` | `/auth/refresh` | Renew session JWT (Bearer token required) |
 
 ## Roadmap
 
@@ -82,4 +83,3 @@ Requires a `.env` in `mobile/` pointing to your local or deployed backend URL.
 ---
 
 **Built by [Andrey Costa](https://andreycosta.com)**
-
