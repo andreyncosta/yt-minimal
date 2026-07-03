@@ -6,7 +6,7 @@ App mobile minimalista sobre o YouTube. Remove Shorts, exibe feed só como texto
 e ativado por toggle explícito do usuário.
 
 ## Stack
-- Backend: Python 3.11+, FastAPI, yt-dlp, httpx, python-dotenv,
+- Backend: Python 3.11+, FastAPI, httpx, python-dotenv,
   python-jose[cryptography], cryptography, slowapi
 - Mobile: React Native com Expo SDK 51+, TypeScript, expo-secure-store,
   expo-web-browser, expo-av
@@ -23,7 +23,7 @@ e ativado por toggle explícito do usuário.
 1. NUNCA exibir vídeos com duração < 3 minutos
 2. NUNCA exibir thumbnails — UI é 100% texto
 3. Reprodução padrão: vídeo via YouTube player embed ou expo-av
-4. Modo áudio: ativado por toggle explícito; usa yt-dlp (bestaudio)
+4. Modo áudio: REMOVIDO — player simplificado para "Ver no YouTube" via expo-web-browser
 5. O toggle de modo áudio deve persistir na sessão (não entre sessões)
 6. Recomendações vêm do feed personalizado do usuário autenticado
    (endpoint: activities, subscriptions, videos)
