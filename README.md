@@ -14,7 +14,7 @@ YouTube's default feed is an engagement-maximization machine. Shorts pollute sub
 
 - ✅ **Shorts filtered out** — duration < 3 min and `#shorts` titles removed server-side
 - ✅ **No thumbnails** — list-only UI, zero visual bait
-- ✅ **Audio-only mode** — consume content without the video stream
+- ✅ **Distraction-free playback** — taps through to YouTube via in-app browser (expo-web-browser); no autoplay, no recommended-video rabbit hole
 - ✅ **OAuth 2.0** — authenticates with your real YouTube account via Google
 - ✅ **Rate limiting** — per-user and per-IP guards on all endpoints
 - ✅ **Security headers** — CSP, X-Frame-Options, HSTS middleware
