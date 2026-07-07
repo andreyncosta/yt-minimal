@@ -9,4 +9,4 @@ def user_or_ip_key(request: Request) -> str:
     return user_id if user_id else get_remote_address(request)
 
 
-limiter = Limiter(key_func=get_remote_address, default_limits=["60/minute"])
+limiter = Limiter(key_func=user_or_ip_key, default_limits=["60/minute"])
