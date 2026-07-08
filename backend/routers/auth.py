@@ -1,3 +1,4 @@
+import logging
 import os
 from typing import Annotated
 
@@ -10,6 +11,7 @@ from limiter import limiter
 from services import auth_service
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+logger = logging.getLogger(__name__)
 
 
 class SessionResponse(BaseModel):
@@ -58,11 +60,15 @@ async def callback(
     try:
         session_token = await auth_service.exchange_code(code)
     except httpx.HTTPStatusError:
+        logger.exception("OAuth code exchange with Google failed")
         return RedirectResponse(
             url=f"{scheme}://auth?error=exchange_failed",
             status_code=302,
         )
     except Exception:
+        # Client only ever sees "error=internal"; log the real cause here so
+        # failures are diagnosable instead of disappearing silently.
+        logger.exception("Unexpected error during OAuth callback handling")
         return RedirectResponse(
             url=f"{scheme}://auth?error=internal",
             status_code=302,
@@ -90,8 +96,12 @@ async def refresh(
     except ValueError as exc:
         raise HTTPException(status_code=401, detail=str(exc))
     except httpx.HTTPStatusError:
+        logger.exception("Failed to contact Google while refreshing session")
         raise HTTPException(status_code=502, detail="Failed to contact Google")
     except Exception:
+        # Previously swallowed silently with no server-side trace; now logged
+        # so refresh failures can actually be diagnosed in production.
+        logger.exception("Unexpected error during token refresh")
         raise HTTPException(status_code=500, detail="Token refresh failed")
 
     return SessionResponse(session_token=new_token)
