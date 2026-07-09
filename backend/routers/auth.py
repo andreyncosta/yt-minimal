@@ -37,6 +37,7 @@ async def login(request: Request) -> RedirectResponse:
 async def callback(
     request: Request,
     code: Annotated[str | None, Query()] = None,
+    state: Annotated[str | None, Query()] = None,
     error: Annotated[str | None, Query()] = None,
     # error_description excluded from responses — may contain PII
     error_description: Annotated[str | None, Query()] = None,  # noqa: ARG001
@@ -54,6 +55,16 @@ async def callback(
     if error or not code:
         return RedirectResponse(
             url=f"{scheme}://auth?error=oauth_denied",
+            status_code=302,
+        )
+
+    if not auth_service.verify_state(state):
+        # Missing, tampered, or expired state — refuse to complete the
+        # exchange. See auth_service.generate_state() for the threat this
+        # guards against (OAuth login CSRF, RFC 6749 section 10.12).
+        logger.warning("OAuth callback rejected: missing or invalid state")
+        return RedirectResponse(
+            url=f"{scheme}://auth?error=invalid_state",
             status_code=302,
         )
 
