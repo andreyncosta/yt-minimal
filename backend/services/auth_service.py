@@ -1,4 +1,8 @@
+import hashlib
+import hmac
 import os
+import secrets
+import time
 import urllib.parse
 from datetime import datetime, timedelta, timezone
 
@@ -15,6 +19,7 @@ _YOUTUBE_SCOPE = "openid https://www.googleapis.com/auth/youtube.readonly"
 _JWT_ALGORITHM = "HS256"
 _JWT_EXPIRY_HOURS = 1
 _JWT_REFRESH_GRACE_HOURS = 24  # allow refresh up to 24h after token expiry
+_STATE_TTL_SECONDS = 600  # OAuth state token validity window (10 minutes)
 
 
 def _fernet() -> Fernet:
@@ -39,6 +44,48 @@ def _extract_user_id(id_token: str) -> str:
     return jose_jwt.get_unverified_claims(id_token)["sub"]
 
 
+def _sign_state(nonce: str, timestamp: str) -> str:
+    secret = os.environ["JWT_SECRET_KEY"].encode()
+    message = f"{nonce}.{timestamp}".encode()
+    return hmac.new(secret, message, hashlib.sha256).hexdigest()
+
+
+def generate_state() -> str:
+    """Generate a signed, time-limited OAuth ``state`` value.
+
+    Prevents OAuth login CSRF (RFC 6749 section 10.12): without this, an
+    attacker could complete their own OAuth authorization and trick a
+    victim's browser into hitting our /auth/callback with the attacker's
+    code, silently binding the victim's app session to the attacker's
+    Google account. The state is a random nonce + timestamp, HMAC-signed
+    with JWT_SECRET_KEY so it can be verified statelessly (no server-side
+    session storage required) and expires after _STATE_TTL_SECONDS.
+    """
+    nonce = secrets.token_urlsafe(16)
+    timestamp = str(int(time.time()))
+    signature = _sign_state(nonce, timestamp)
+    return f"{nonce}.{timestamp}.{signature}"
+
+
+def verify_state(state: str | None) -> bool:
+    """Validate a `state` value produced by generate_state(). Returns False
+    on any malformed, unsigned, tampered, or expired input."""
+    if not state:
+        return False
+    parts = state.split(".", 2)
+    if len(parts) != 3:
+        return False
+    nonce, timestamp, signature = parts
+    expected = _sign_state(nonce, timestamp)
+    if not hmac.compare_digest(expected, signature):
+        return False
+    try:
+        issued_at = int(timestamp)
+    except ValueError:
+        return False
+    return (time.time() - issued_at) <= _STATE_TTL_SECONDS
+
+
 def build_auth_url() -> str:
     params = {
         "client_id": os.environ["GOOGLE_CLIENT_ID"],
@@ -47,6 +94,7 @@ def build_auth_url() -> str:
         "scope": _YOUTUBE_SCOPE,
         "access_type": "offline",
         "prompt": "consent",  # ensures refresh_token is always returned
+        "state": generate_state(),
     }
     return f"{_GOOGLE_AUTH_URL}?{urllib.parse.urlencode(params)}"
 
