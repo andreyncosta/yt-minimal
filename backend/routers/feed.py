@@ -1,3 +1,4 @@
+import logging
 from typing import Annotated
 
 import httpx
@@ -9,6 +10,7 @@ from limiter import limiter, user_or_ip_key
 from services import feed_service
 
 router = APIRouter(prefix="/feed", tags=["feed"])
+logger = logging.getLogger(__name__)
 
 
 class VideoItem(BaseModel):
@@ -53,6 +55,10 @@ async def get_feed(
             )
         raise HTTPException(status_code=502, detail="YouTube API error")
     except Exception:
+        # Previously swallowed silently with no server-side trace; now logged
+        # so feed failures can actually be diagnosed in production (same fix
+        # pattern already applied to routers/auth.py).
+        logger.exception("Unexpected error while building feed")
         raise HTTPException(status_code=500, detail="Failed to fetch feed")
 
     return FeedResponse(
