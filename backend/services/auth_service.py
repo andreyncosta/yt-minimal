@@ -3,9 +3,9 @@ import urllib.parse
 from datetime import datetime, timedelta, timezone
 
 import httpx
+import jwt
 from cryptography.fernet import Fernet, InvalidToken
-from jose import JWTError
-from jose import jwt as jose_jwt
+from jwt.exceptions import InvalidTokenError
 
 import token_store
 
@@ -28,7 +28,7 @@ def _create_session_jwt(user_id: str) -> str:
         "iat": now,
         "exp": now + timedelta(hours=_JWT_EXPIRY_HOURS),
     }
-    return jose_jwt.encode(payload, os.environ["JWT_SECRET_KEY"], algorithm=_JWT_ALGORITHM)
+    return jwt.encode(payload, os.environ["JWT_SECRET_KEY"], algorithm=_JWT_ALGORITHM)
 
 
 def _extract_user_id(id_token: str) -> str:
@@ -36,7 +36,7 @@ def _extract_user_id(id_token: str) -> str:
 
     Safe because id_token arrived directly from Google's token endpoint over TLS.
     """
-    return jose_jwt.get_unverified_claims(id_token)["sub"]
+    return jwt.decode(id_token, options={"verify_signature": False})["sub"]
 
 
 def build_auth_url() -> str:
@@ -117,13 +117,13 @@ async def refresh_session(session_token: str) -> str:
     """Verify the session JWT signature and enforce a grace-period cap, then
     confirm the Google session is still active and return a new session JWT."""
     try:
-        payload = jose_jwt.decode(
+        payload = jwt.decode(
             session_token,
             os.environ["JWT_SECRET_KEY"],
             algorithms=[_JWT_ALGORITHM],
             options={"verify_exp": False},
         )
-    except JWTError as exc:
+    except InvalidTokenError as exc:
         raise ValueError("Invalid session token") from exc
 
     exp_timestamp = payload.get("exp")

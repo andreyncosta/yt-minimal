@@ -1,9 +1,9 @@
 import os
 from typing import Annotated
 
+import jwt
 from fastapi import Depends, Header, HTTPException, Request
-from jose import JWTError
-from jose import jwt as jose_jwt
+from jwt.exceptions import InvalidTokenError
 
 _JWT_ALGORITHM = "HS256"
 _WWW_AUTH = {"WWW-Authenticate": "Bearer"}
@@ -28,12 +28,12 @@ async def get_current_user(
     token = authorization.removeprefix("Bearer ")
 
     try:
-        payload = jose_jwt.decode(
+        payload = jwt.decode(
             token,
             os.environ["JWT_SECRET_KEY"],
             algorithms=[_JWT_ALGORITHM],
         )
-    except JWTError:
+    except InvalidTokenError:
         raise HTTPException(
             status_code=401,
             detail="Invalid or expired token",
