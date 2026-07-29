@@ -1,4 +1,5 @@
 import os
+import secrets
 import urllib.parse
 from datetime import datetime, timedelta, timezone
 
@@ -15,6 +16,7 @@ _YOUTUBE_SCOPE = "openid https://www.googleapis.com/auth/youtube.readonly"
 _JWT_ALGORITHM = "HS256"
 _JWT_EXPIRY_HOURS = 1
 _JWT_REFRESH_GRACE_HOURS = 24  # allow refresh up to 24h after token expiry
+_STATE_TTL_SECONDS = 600  # 10 minutes — window to complete the Google consent screen
 
 
 def _fernet() -> Fernet:
@@ -39,6 +41,44 @@ def _extract_user_id(id_token: str) -> str:
     return jose_jwt.get_unverified_claims(id_token)["sub"]
 
 
+def _sign_state() -> str:
+    """Create a short-lived, signed anti-CSRF ``state`` token for the OAuth flow.
+
+    Stateless by design: the JWT's own signature and ``exp`` claim are all that
+    ``verify_state`` checks on callback, so no server-side session storage is
+    needed between ``/auth/login`` and ``/auth/callback``. This closes a login
+    CSRF gap where an attacker could otherwise drive a victim's client to
+    ``/auth/callback`` with an authorization code the attacker controls,
+    binding the victim's session to the attacker's Google account (see
+    RFC 6749 §10.12).
+    """
+    now = datetime.now(timezone.utc)
+    payload = {
+        "purpose": "oauth_state",
+        "nonce": secrets.token_urlsafe(16),
+        "iat": now,
+        "exp": now + timedelta(seconds=_STATE_TTL_SECONDS),
+    }
+    return jose_jwt.encode(payload, os.environ["JWT_SECRET_KEY"], algorithm=_JWT_ALGORITHM)
+
+
+def verify_state(state: str | None) -> bool:
+    """Verify a ``state`` value returned from Google was one we issued and
+    hasn't expired. Never raises — any failure (missing, malformed, expired,
+    bad signature, wrong purpose) is treated as a rejected OAuth attempt."""
+    if not state:
+        return False
+    try:
+        payload = jose_jwt.decode(
+            state,
+            os.environ["JWT_SECRET_KEY"],
+            algorithms=[_JWT_ALGORITHM],
+        )
+    except JWTError:
+        return False
+    return payload.get("purpose") == "oauth_state"
+
+
 def build_auth_url() -> str:
     params = {
         "client_id": os.environ["GOOGLE_CLIENT_ID"],
@@ -47,6 +87,7 @@ def build_auth_url() -> str:
         "scope": _YOUTUBE_SCOPE,
         "access_type": "offline",
         "prompt": "consent",  # ensures refresh_token is always returned
+        "state": _sign_state(),
     }
     return f"{_GOOGLE_AUTH_URL}?{urllib.parse.urlencode(params)}"
 
