@@ -37,6 +37,7 @@ async def login(request: Request) -> RedirectResponse:
 async def callback(
     request: Request,
     code: Annotated[str | None, Query()] = None,
+    state: Annotated[str | None, Query()] = None,
     error: Annotated[str | None, Query()] = None,
     # error_description excluded from responses — may contain PII
     error_description: Annotated[str | None, Query()] = None,  # noqa: ARG001
@@ -54,6 +55,17 @@ async def callback(
     if error or not code:
         return RedirectResponse(
             url=f"{scheme}://auth?error=oauth_denied",
+            status_code=302,
+        )
+
+    # Anti-CSRF: `state` must be the signed token /auth/login issued. Without
+    # this check an attacker can drive a victim's client to this callback with
+    # an authorization code the attacker controls, binding the victim's
+    # session to the attacker's Google account (RFC 6749 §10.12).
+    if not auth_service.verify_state(state):
+        logger.warning("OAuth callback rejected: missing or invalid state (possible CSRF)")
+        return RedirectResponse(
+            url=f"{scheme}://auth?error=invalid_state",
             status_code=302,
         )
 
